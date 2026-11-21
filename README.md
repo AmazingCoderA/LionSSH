@@ -1,151 +1,90 @@
-﻿# LionSSH
+# LionSSH
 
-[![CI](https://github.com/AmazingCoderA/LionSSH/actions/workflows/ci.yml/badge.svg)](https://github.com/AmazingCoderA/LionSSH/actions/workflows/ci.yml)
+[![Build](https://github.com/AmazingCoderA/LionSSH/actions/workflows/build.yml/badge.svg)](https://github.com/AmazingCoderA/LionSSH/actions/workflows/build.yml)
 [![Release](https://github.com/AmazingCoderA/LionSSH/actions/workflows/release.yml/badge.svg)](https://github.com/AmazingCoderA/LionSSH/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/AmazingCoderA/LionSSH?display_name=tag&label=release)](https://github.com/AmazingCoderA/LionSSH/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust)](https://www.rust-lang.org/)
 
-**Мега TUI command-center на Rust**: SSH, прокси, скрипты, планировщик, алиасы, терминал, темы и эффекты.
+**LionSSH** — command center для SSH, прокси, скриптов, планировщика, алиасов и истории.  
 
-<p>
-  <a href="https://github.com/AmazingCoderA/LionSSH/releases/latest"><img alt="Download Release" src="https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge"></a>
-  <a href="https://github.com/AmazingCoderA/LionSSH/actions"><img alt="Actions" src="https://img.shields.io/badge/GitHub-Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white"></a>
-  <a href="https://github.com/AmazingCoderA/LionSSH/issues"><img alt="Issues" src="https://img.shields.io/badge/Report-Issue-f85149?style=for-the-badge&logo=github"></a>
-</p>
+Две версии:
+- **GUI** — десктопное приложение (`lionssh-gui`)
+- **CLI** — терминальная утилита (`lionssh`)
 
-> Windows/Linux бинарники, автосборка GitHub Actions, релизы, установщики и AUR packaging.
+Обе версии используют общий `workspace.json`.
 
-## Быстрые ссылки
+## Скачать (без install-скриптов)
 
-- [Возможности](#возможности)
-- [Установка](#установка)
-- [Сборка из исходников](#сборка-из-исходников)
-- [Hotkeys](#hotkeys)
-- [Конфиг и данные](#конфиг-и-данные)
-- [GitHub Actions / Releases](#github-actions--releases)
-- [AUR](#aur)
+### Windows
+Из [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest) скачай нужный файл:
+- **GUI**: `lionssh-gui-x86_64-pc-windows-msvc.exe`
+- **CLI**: `lionssh-x86_64-pc-windows-msvc.exe`
+
+Запускай напрямую.
+
+### Linux
+Из [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest):
+- **GUI**: `lionssh-gui-x86_64-unknown-linux-gnu`
+- **CLI**: `lionssh-x86_64-unknown-linux-gnu`, `lionssh-x86_64-unknown-linux-musl`, `lionssh-aarch64-unknown-linux-gnu`
+
+```bash
+chmod +x ./lionssh-gui-x86_64-unknown-linux-gnu
+./lionssh-gui-x86_64-unknown-linux-gnu
+```
+
+> GUI на Linux требует X11/Wayland + OpenGL. Для headless-серверов используй CLI.
 
 ## Возможности
 
-- **SSH Manager** - профили, identity, startup-команды, заметки, быстрый connect.
-- **Proxy Profiles** - `jump` / `socks5` / `http`, привязка к SSH.
-- **Script Runner** - `powershell/bash/cmd/shell/ssh`, теги, экспорт, запуск.
-- **Scheduler** - периодические/одноразовые задачи, pause/resume, run-now, история.
-- **Aliases** - короткие команды для частых действий.
-- **Terminal** - запуск команд/алиасов, вывод, скролл, статус выполнения.
-- **Themes & Effects** - 8 тем, эффекты, настраиваемый shell/лимит истории.
-- **Persistence** - автосохранение workspace в JSON.
+- **SSH profiles** — host/user/port/identity, startup commands, proxy binding, connect/copy command.
+- **Proxies** — `jump` / `socks5` / `http`.
+- **Scripts** — `shell/powershell/bash/cmd/ssh`, теги, описание, run/export.
+- **Scheduler** — command/script задачи, interval, enable/disable, run now, история.
+- **Aliases** — короткие имена для команд.
+- **Run/Terminal** — выполнение команд/алиасов, захват вывода, статус.
+- **Shared storage** — `%LOCALAPPDATA%\LionSSH\workspace.json` (Windows) / data dir (Linux).
 
-## Установка
-
-### Windows (просто exe)
-
-1. Открой [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest)
-2. Скачай **`lionssh-x86_64-pc-windows-msvc.exe`** (или `.zip`, если удобнее)
-3. Запусти `lionssh.exe`
-
-> Никаких PowerShell install-скриптов не нужно.
-
-### Linux (просто бинарник)
-
-1. Открой [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest)
-2. Скачай нужный файл:
-   - `lionssh-x86_64-unknown-linux-gnu`
-   - `lionssh-x86_64-unknown-linux-musl`
-   - `lionssh-aarch64-unknown-linux-gnu`
-3. Сделай исполняемым и запусти:
+## CLI примеры
 
 ```bash
-chmod +x ./lionssh-x86_64-unknown-linux-gnu
-./lionssh-x86_64-unknown-linux-gnu
-```
-
-Архивы `.tar.gz` тоже остаются в релизе, если удобнее скачать пакет с README/LICENSE.
-
-### AUR
-
-В репозитории есть шаблон `packaging/aur/PKGBUILD`. Для публикации в AUR создай пакет `lionssh-git` (или `lionssh`) и замени `AmazingCoderA/LionSSH` на реальный репозиторий.
-
-```bash
-cd packaging/aur
-makepkg -si
+lionssh paths
+lionssh run "echo hello"
+lionssh ssh list
+lionssh ssh add my-server 1.2.3.4 --user root --port 22
+lionssh ssh connect my-server
+lionssh proxy add home --kind socks5 --host 127.0.0.1 --port 1080
+lionssh script add backup --kind bash --content "tar -czf backup.tgz ./data"
+lionssh script run backup
+lionssh task add hourly-backup --kind script --target backup --interval 3600
+lionssh alias add ll "ls -la"
+lionssh alias run ll
+lionssh history --limit 20
 ```
 
 ## Сборка из исходников
 
 ```bash
-cargo build --release
+# CLI only
+cargo build --release --no-default-features --bin lionssh
+
+# GUI
+cargo build --release --bin lionssh-gui
 ```
-
-Запуск dev:
-
-```bash
-cargo run
-```
-
-## Hotkeys
-
-| Область | Клавиши |
-|---|---|
-| Global | `Tab/BackTab` вкладки, `1-8` переход, `Ctrl+S` сохранить, `?` help, `q` выход |
-| Terminal | `c` команда/алиас, `l` очистить, `Up/Down` скролл |
-| SSH | `a` add, `e` edit, `d` delete, `Enter/c` connect, `t` show command |
-| Scripts | `a/e/d`, `Enter/r` run, `x` export |
-| Scheduler | `a/e/d`, `Space` pause/resume, `Enter/r` run now |
-| Proxies | `a/e/d` |
-| Aliases | `a/e/d`, `Enter/r` run |
-| Settings | `t` theme, `e` effects, `m` mode, `s` shell, `l` log limit |
-
-## Формат ввода
-
-- Для многострочного текста в формах используй `;;` как разделитель строк.
-- `Scheduler target kind`: `command` = shell команда/алиас, `script` = id скрипта.
-- `SSH script`: content выполняется как remote command через выбранный SSH профиль.
-- Proxy kinds: `jump` (ProxyJump), `socks5/http` (ProxyCommand через `nc`).
-
-## Конфиг и данные
-
-- Workspace: `%LOCALAPPDATA%\LionSSH\workspace.json` (Windows) / data_local/home на Linux.
-- Export scripts: `%LOCALAPPDATA%\LionSSH\scripts\...`
 
 ## GitHub Actions / Releases
 
-В проект добавлены workflow:
+- `.github/workflows/build.yml` — сборка-проверка (Windows/Linux/macOS).
+- `.github/workflows/release.yml` — релиз по тегу `v*`.
 
-- `.github/workflows/ci.yml` - проверка на push/PR.
-- `.github/workflows/release.yml` - автосборка бинарников и публикация GitHub Release по тегу `v*`.
-
-### Как выпустить релиз
-
-```bash
-git add .
-git commit -m "feat: initial LionSSH mega release"
-git tag v1.0.0
-git push origin main --tags
-```
-
-После пуша тега Release workflow соберет:
-
-- Windows: `x86_64-pc-windows-msvc` (.zip)
-- Linux: `x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-gnu` (.tar.gz)
-- `SHA256SUMS.txt` и `.sha256` для артефактов
+Релиз публикует:
+- прямые бинарники: `lionssh-<target>[.exe]`, `lionssh-gui-<target>[.exe]` (где GUI поддерживается)
+- архивы `.zip/.tar.gz`
+- `SHA256SUMS.txt` и `.sha256`
 
 ## AUR
 
-Файл: `packaging/aur/PKGBUILD` (шаблон `lionssh-git`). Перед публикацией:
+Шаблон: `packaging/aur/PKGBUILD`.
 
-1. Замени `AmazingCoderA/LionSSH` на реальный GitHub repo.
-2. Проверь `pkgver()`, зависимости, license.
-3. Сгенерируй `.SRCINFO`: `makepkg --printsrcinfo > .SRCINFO`.
-4. Запушь в AUR repo.
+## License
 
-## Зависимости
-
-- Runtime: `ssh` в PATH; для socks/http proxy - `nc` (netcat).
-- Build: Rust stable toolchain.
-
-## Лицензия
-
-MIT - см. [LICENSE](LICENSE).
-
+MIT — см. [LICENSE](LICENSE).

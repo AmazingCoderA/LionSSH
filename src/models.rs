@@ -5,19 +5,14 @@ use std::collections::VecDeque;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-pub fn now() -> DateTime<Local> {
-    Local::now()
-}
-
-pub fn gen_id() -> String {
-    Uuid::new_v4().to_string()
-}
+pub fn now() -> DateTime<Local> { Local::now() }
+pub fn gen_id() -> String { Uuid::new_v4().to_string() }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct ProxyProfile {
     pub id: String,
     pub name: String,
-    /// "jump" | "socks5" | "http" | "none"
+    /// jump | socks5 | http | none
     pub kind: String,
     pub host: String,
     pub port: u16,
@@ -27,9 +22,7 @@ pub struct ProxyProfile {
 
 impl ProxyProfile {
     pub fn display(&self) -> String {
-        if self.kind == "none" || self.host.is_empty() {
-            return "direct".into();
-        }
+        if self.kind == "none" || self.host.is_empty() { return "direct".into(); }
         let auth = if self.user.is_empty() { String::new() } else { format!("{}@", self.user) };
         format!("{}://{}{}:{}", self.kind, auth, self.host, self.port)
     }
@@ -51,7 +44,9 @@ pub struct SshProfile {
 impl SshProfile {
     pub fn target(&self) -> String {
         let user = if self.user.is_empty() { "user".to_string() } else { self.user.clone() };
-        format!("{}@{}:{}", user, if self.host.is_empty() { "host" } else { &self.host }, if self.port == 0 { 22 } else { self.port })
+        let host = if self.host.is_empty() { "host" } else { &self.host };
+        let port = if self.port == 0 { 22 } else { self.port };
+        format!("{user}@{host}:{port}")
     }
 }
 
@@ -60,10 +55,9 @@ pub struct Script {
     pub id: String,
     pub name: String,
     pub description: String,
-    /// "shell" | "powershell" | "bash" | "cmd" | "ssh"
+    /// powershell | bash | cmd | shell | ssh
     pub kind: String,
     pub content: String,
-    /// Optional profile id for ssh scripts
     pub profile_id: String,
     pub tags: Vec<String>,
     pub created_at: DateTime<Local>,
@@ -73,10 +67,7 @@ pub struct Script {
 impl Default for Script {
     fn default() -> Self {
         let t = now();
-        Self {
-            id: gen_id(), name: String::new(), description: String::new(), kind: "powershell".into(),
-            content: String::new(), profile_id: String::new(), tags: vec![], created_at: t, updated_at: t,
-        }
+        Self { id: gen_id(), name: String::new(), description: String::new(), kind: "shell".into(), content: String::new(), profile_id: String::new(), tags: vec![], created_at: t, updated_at: t }
     }
 }
 
@@ -84,10 +75,9 @@ impl Default for Script {
 pub struct ScheduledTask {
     pub id: String,
     pub name: String,
-    /// "command" | "script"
+    /// command | script
     pub target_kind: String,
-    pub target: String, // command text or script id
-    /// interval seconds; 0 means run once at run_at
+    pub target: String,
     pub interval_secs: u64,
     pub run_at: Option<DateTime<Local>>,
     pub enabled: bool,
@@ -98,10 +88,7 @@ pub struct ScheduledTask {
 
 impl Default for ScheduledTask {
     fn default() -> Self {
-        Self {
-            id: gen_id(), name: String::new(), target_kind: "command".into(), target: String::new(),
-            interval_secs: 60, run_at: None, enabled: true, last_run: None, last_status: "never".into(), run_count: 0,
-        }
+        Self { id: gen_id(), name: String::new(), target_kind: "command".into(), target: String::new(), interval_secs: 60, run_at: None, enabled: true, last_run: None, last_status: "never".into(), run_count: 0 }
     }
 }
 
@@ -116,9 +103,9 @@ pub struct CommandAlias {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HistoryEntry {
     pub at: DateTime<Local>,
-    pub kind: String, // command/script/ssh/scheduler/system
+    pub kind: String,
     pub title: String,
-    pub status: String, // ok/error/running/info
+    pub status: String,
     pub detail: String,
 }
 
@@ -131,24 +118,19 @@ impl HistoryEntry {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AppConfig {
     pub theme: String,
-    pub effects: bool,
-    pub effect: String, // matrix/rain/pulse/none
-    pub default_shell: String, // powershell/bash/cmd
+    pub default_shell: String,
     pub log_limit: usize,
-    pub scheduler_tick_ms: u64,
+    pub gui_scale: f32,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
-        Self {
-            theme: "cyberpunk".into(),
-            effects: true,
-            effect: "pulse".into(),
-            default_shell: "powershell".into(),
-            log_limit: 300,
-            scheduler_tick_ms: 1000,
-        }
+        Self { theme: "cyberpunk".into(), default_shell: default_shell().into(), log_limit: 300, gui_scale: 1.0 }
     }
+}
+
+pub fn default_shell() -> &'static str {
+    if cfg!(windows) { "powershell" } else { "bash" }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -168,10 +150,6 @@ impl Workspace {
         let base = dirs::data_local_dir().or_else(dirs::home_dir).context("no home/data dir")?;
         Ok(base.join("LionSSH"))
     }
-    pub fn data_file() -> Result<PathBuf> {
-        Ok(Self::data_dir()?.join("workspace.json"))
-    }
-    pub fn scripts_dir() -> Result<PathBuf> {
-        Ok(Self::data_dir()?.join("scripts"))
-    }
+    pub fn data_file() -> Result<PathBuf> { Ok(Self::data_dir()?.join("workspace.json")) }
+    pub fn scripts_dir() -> Result<PathBuf> { Ok(Self::data_dir()?.join("scripts")) }
 }

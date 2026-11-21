@@ -1,12 +1,16 @@
-﻿use anyhow::{Context, Result};
+use anyhow::{Context, Result};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-pub fn now() -> DateTime<Local> { Local::now() }
-pub fn gen_id() -> String { Uuid::new_v4().to_string() }
+pub fn now() -> DateTime<Local> {
+    Local::now()
+}
+pub fn gen_id() -> String {
+    Uuid::new_v4().to_string()
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct ProxyProfile {
@@ -22,8 +26,14 @@ pub struct ProxyProfile {
 
 impl ProxyProfile {
     pub fn display(&self) -> String {
-        if self.kind == "none" || self.host.is_empty() { return "direct".into(); }
-        let auth = if self.user.is_empty() { String::new() } else { format!("{}@", self.user) };
+        if self.kind == "none" || self.host.is_empty() {
+            return "direct".into();
+        }
+        let auth = if self.user.is_empty() {
+            String::new()
+        } else {
+            format!("{}@", self.user)
+        };
         format!("{}://{}{}:{}", self.kind, auth, self.host, self.port)
     }
 }
@@ -43,8 +53,16 @@ pub struct SshProfile {
 
 impl SshProfile {
     pub fn target(&self) -> String {
-        let user = if self.user.is_empty() { "user".to_string() } else { self.user.clone() };
-        let host = if self.host.is_empty() { "host" } else { &self.host };
+        let user = if self.user.is_empty() {
+            "user".to_string()
+        } else {
+            self.user.clone()
+        };
+        let host = if self.host.is_empty() {
+            "host"
+        } else {
+            &self.host
+        };
         let port = if self.port == 0 { 22 } else { self.port };
         format!("{user}@{host}:{port}")
     }
@@ -67,7 +85,17 @@ pub struct Script {
 impl Default for Script {
     fn default() -> Self {
         let t = now();
-        Self { id: gen_id(), name: String::new(), description: String::new(), kind: "shell".into(), content: String::new(), profile_id: String::new(), tags: vec![], created_at: t, updated_at: t }
+        Self {
+            id: gen_id(),
+            name: String::new(),
+            description: String::new(),
+            kind: "shell".into(),
+            content: String::new(),
+            profile_id: String::new(),
+            tags: vec![],
+            created_at: t,
+            updated_at: t,
+        }
     }
 }
 
@@ -88,7 +116,18 @@ pub struct ScheduledTask {
 
 impl Default for ScheduledTask {
     fn default() -> Self {
-        Self { id: gen_id(), name: String::new(), target_kind: "command".into(), target: String::new(), interval_secs: 60, run_at: None, enabled: true, last_run: None, last_status: "never".into(), run_count: 0 }
+        Self {
+            id: gen_id(),
+            name: String::new(),
+            target_kind: "command".into(),
+            target: String::new(),
+            interval_secs: 60,
+            run_at: None,
+            enabled: true,
+            last_run: None,
+            last_status: "never".into(),
+            run_count: 0,
+        }
     }
 }
 
@@ -110,8 +149,19 @@ pub struct HistoryEntry {
 }
 
 impl HistoryEntry {
-    pub fn new(kind: &str, title: impl Into<String>, status: &str, detail: impl Into<String>) -> Self {
-        Self { at: now(), kind: kind.into(), title: title.into(), status: status.into(), detail: detail.into() }
+    pub fn new(
+        kind: &str,
+        title: impl Into<String>,
+        status: &str,
+        detail: impl Into<String>,
+    ) -> Self {
+        Self {
+            at: now(),
+            kind: kind.into(),
+            title: title.into(),
+            status: status.into(),
+            detail: detail.into(),
+        }
     }
 }
 
@@ -125,12 +175,21 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        Self { theme: "cyberpunk".into(), default_shell: default_shell().into(), log_limit: 300, gui_scale: 1.0 }
+        Self {
+            theme: "cyberpunk".into(),
+            default_shell: default_shell().into(),
+            log_limit: 300,
+            gui_scale: 1.0,
+        }
     }
 }
 
 pub fn default_shell() -> &'static str {
-    if cfg!(windows) { "powershell" } else { "bash" }
+    if cfg!(windows) {
+        "powershell"
+    } else {
+        "bash"
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -147,9 +206,15 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn data_dir() -> Result<PathBuf> {
-        let base = dirs::data_local_dir().or_else(dirs::home_dir).context("no home/data dir")?;
+        let base = dirs::data_local_dir()
+            .or_else(dirs::home_dir)
+            .context("no home/data dir")?;
         Ok(base.join("LionSSH"))
     }
-    pub fn data_file() -> Result<PathBuf> { Ok(Self::data_dir()?.join("workspace.json")) }
-    pub fn scripts_dir() -> Result<PathBuf> { Ok(Self::data_dir()?.join("scripts")) }
+    pub fn data_file() -> Result<PathBuf> {
+        Ok(Self::data_dir()?.join("workspace.json"))
+    }
+    pub fn scripts_dir() -> Result<PathBuf> {
+        Ok(Self::data_dir()?.join("scripts"))
+    }
 }

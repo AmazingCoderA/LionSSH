@@ -1,6 +1,18 @@
 ﻿# LionSSH
 
-Мега TUI command-center на Rust: SSH, прокси, скрипты, планировщик, алиасы, терминал, темы и эффекты.
+[![CI](https://github.com/AmazingCoderA/LionSSH/actions/workflows/ci.yml/badge.svg)](https://github.com/AmazingCoderA/LionSSH/actions/workflows/ci.yml)
+[![Release](https://github.com/AmazingCoderA/LionSSH/actions/workflows/release.yml/badge.svg)](https://github.com/AmazingCoderA/LionSSH/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/AmazingCoderA/LionSSH?display_name=tag&label=release)](https://github.com/AmazingCoderA/LionSSH/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust)](https://www.rust-lang.org/)
+
+**Мега TUI command-center на Rust**: SSH, прокси, скрипты, планировщик, алиасы, терминал, темы и эффекты.
+
+<p>
+  <a href="https://github.com/AmazingCoderA/LionSSH/releases/latest"><img alt="Download Release" src="https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge"></a>
+  <a href="https://github.com/AmazingCoderA/LionSSH/actions"><img alt="Actions" src="https://img.shields.io/badge/GitHub-Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white"></a>
+  <a href="https://github.com/AmazingCoderA/LionSSH/issues"><img alt="Issues" src="https://img.shields.io/badge/Report-Issue-f85149?style=for-the-badge&logo=github"></a>
+</p>
 
 > Windows/Linux бинарники, автосборка GitHub Actions, релизы, установщики и AUR packaging.
 

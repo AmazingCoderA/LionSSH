@@ -80,6 +80,9 @@ jobs:
           cp README.md LICENSE "$OUT/"
           cp -r packaging "$OUT/packaging"
           mkdir -p dist
+          # Raw binary for direct download
+          cp "target/${{ matrix.target }}/release/${BIN}${{ matrix.ext }}" "dist/${BIN}-${{ matrix.target }}${{ matrix.ext }}"
+          (cd dist && sha256sum "${BIN}-${{ matrix.target }}${{ matrix.ext }}" > "${BIN}-${{ matrix.target }}${{ matrix.ext }}.sha256")
           if [ "${{ matrix.archive }}" = "zip" ]; then
             (cd dist && 7z a "$NAME.zip" "$NAME")
           else

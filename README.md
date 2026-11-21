@@ -39,29 +39,29 @@
 
 ## Установка
 
-### Windows (Release binary)
+### Windows (просто exe)
 
-Скачай `lionssh-*-x86_64-pc-windows-msvc.zip` из Releases, распакуй и запусти `lionssh.exe`.
+1. Открой [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest)
+2. Скачай **`lionssh-x86_64-pc-windows-msvc.exe`** (или `.zip`, если удобнее)
+3. Запусти `lionssh.exe`
 
-Или PowerShell installer (после публикации релиза, замени `AmazingCoderA/LionSSH`):
+> Никаких PowerShell install-скриптов не нужно.
 
-```powershell
-irm https://raw.githubusercontent.com/AmazingCoderA/LionSSH/main/packaging/install/install-windows.ps1 | iex
-```
+### Linux (просто бинарник)
 
-### Linux (Release binary)
-
-Скачай архив под свой target из Releases:
-
-- `x86_64-unknown-linux-gnu`
-- `x86_64-unknown-linux-musl`
-- `aarch64-unknown-linux-gnu`
-
-Или installer script:
+1. Открой [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest)
+2. Скачай нужный файл:
+   - `lionssh-x86_64-unknown-linux-gnu`
+   - `lionssh-x86_64-unknown-linux-musl`
+   - `lionssh-aarch64-unknown-linux-gnu`
+3. Сделай исполняемым и запусти:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AmazingCoderA/LionSSH/main/packaging/install/install-linux.sh | bash
+chmod +x ./lionssh-x86_64-unknown-linux-gnu
+./lionssh-x86_64-unknown-linux-gnu
 ```
+
+Архивы `.tar.gz` тоже остаются в релизе, если удобнее скачать пакет с README/LICENSE.
 
 ### AUR
 

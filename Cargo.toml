@@ -1,0 +1,24 @@
+﻿[package]
+name = "lionssh"
+version = "1.0.0"
+edition = "2021"
+description = "LionSSH - mega terminal command center: scripts, ssh, proxy, scheduler, themes & effects"
+authors = ["You"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+chrono = { version = "0.4", features = ["clock", "serde"] }
+dirs = "5"
+rand = "0.8"
+crossterm = "0.28"
+ratatui = "0.29"
+uuid = { version = "1", features = ["v4", "serde"] }
+anyhow = "1"
+shell-words = "1"
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = true

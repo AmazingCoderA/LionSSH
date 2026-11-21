@@ -1,0 +1,32 @@
+﻿# Maintainer: LionSSH contributors
+pkgname=lionssh-git
+pkgver=1.0.0.r0.g0000000
+pkgrel=1
+pkgdesc="LionSSH - mega terminal command center: SSH, scripts, proxy, scheduler, themes"
+arch=('x86_64' 'aarch64')
+url="https://github.com/OWNER/LionSSH"
+license=('MIT')
+depends=('gcc-libs')
+makedepends=('cargo' 'git')
+provides=('lionssh')
+conflicts=('lionssh')
+source=("$pkgname::git+https://github.com/OWNER/LionSSH.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$pkgname"
+  git describe --long --tags --always 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' || \
+    printf "1.0.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$pkgname"
+  cargo build --release --locked || cargo build --release
+}
+
+package() {
+  cd "$pkgname"
+  install -Dm755 "target/release/lionssh" "$pkgdir/usr/bin/lionssh"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

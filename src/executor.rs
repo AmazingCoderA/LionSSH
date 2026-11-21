@@ -1,4 +1,4 @@
-﻿use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use std::io::Read;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
@@ -40,20 +40,38 @@ pub fn run_shell(shell: &str, command: &str, timeout: Option<Duration>) -> Resul
     let started = Instant::now();
     let mut child = cmd.spawn().with_context(|| format!("spawn {shell}"))?;
 
-    let mut stdout = child.stdout.take().ok_or_else(|| anyhow!("stdout missing"))?;
-    let mut stderr = child.stderr.take().ok_or_else(|| anyhow!("stderr missing"))?;
-    let out_handle = std::thread::spawn(move || { let mut b = Vec::new(); let _ = stdout.read_to_end(&mut b); b });
-    let err_handle = std::thread::spawn(move || { let mut b = Vec::new(); let _ = stderr.read_to_end(&mut b); b });
+    let mut stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| anyhow!("stdout missing"))?;
+    let mut stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| anyhow!("stderr missing"))?;
+    let out_handle = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        let _ = stdout.read_to_end(&mut b);
+        b
+    });
+    let err_handle = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        let _ = stderr.read_to_end(&mut b);
+        b
+    });
 
     let status = if let Some(t) = timeout {
         let deadline = Instant::now() + t;
         loop {
-            if let Some(s) = child.try_wait()? { break s; }
+            if let Some(s) = child.try_wait()? {
+                break s;
+            }
             if Instant::now() >= deadline {
                 let _ = child.kill();
                 let _ = child.wait();
-                let out = String::from_utf8_lossy(&out_handle.join().unwrap_or_default()).to_string();
-                let err = String::from_utf8_lossy(&err_handle.join().unwrap_or_default()).to_string();
+                let out =
+                    String::from_utf8_lossy(&out_handle.join().unwrap_or_default()).to_string();
+                let err =
+                    String::from_utf8_lossy(&err_handle.join().unwrap_or_default()).to_string();
                 return Ok(RunResult {
                     ok: false,
                     status: "timeout".into(),
@@ -72,7 +90,10 @@ pub fn run_shell(shell: &str, command: &str, timeout: Option<Duration>) -> Resul
     let ok = status.success();
     Ok(RunResult {
         ok,
-        status: status.code().map(|c| c.to_string()).unwrap_or_else(|| "signal".into()),
+        status: status
+            .code()
+            .map(|c| c.to_string())
+            .unwrap_or_else(|| "signal".into()),
         output: trim_output(merge_output(out, err)),
         duration_ms: started.elapsed().as_millis(),
     })
@@ -98,7 +119,7 @@ fn trim_output(mut s: String) -> String {
     s
 }
 
-pub fn script_shell(kind: &str, default_shell: &str) -> &str {
+pub fn script_shell<'a>(kind: &'a str, default_shell: &'a str) -> &'a str {
     match kind {
         "powershell" | "bash" | "cmd" => kind,
         "shell" => default_shell,

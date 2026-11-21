@@ -1,5 +1,5 @@
 ﻿$ErrorActionPreference = "Stop"
-$Repo = "OWNER/LionSSH"
+$Repo = "AmazingCoderA/LionSSH"
 $Bin = "lionssh"
 $Version = if ($args.Length -gt 0) { $args[0] } else { "latest" }
 $Target = "x86_64-pc-windows-msvc"
@@ -20,3 +20,4 @@ New-Item -ItemType Directory -Force -Path $Dest | Out-Null
 Copy-Item (Join-Path $Dir.FullName "$Bin.exe") (Join-Path $Dest "$Bin.exe") -Force
 Write-Host "Installed to $Dest\$Bin.exe"
 Write-Host "Add to PATH if needed: $Dest"
+

@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env bash
 set -euo pipefail
-REPO="OWNER/LionSSH"
+REPO="AmazingCoderA/LionSSH"
 BIN="lionssh"
 VERSION="${1:-latest}"
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -23,3 +23,4 @@ tar -xzf "$TMP/pkg.tar.gz" -C "$TMP"
 DIR="$(find "$TMP" -maxdepth 1 -type d -name "${BIN}-*" | head -n1)"
 install -Dm755 "$DIR/$BIN" "${HOME}/.local/bin/$BIN"
 echo "Installed to ${HOME}/.local/bin/$BIN"
+

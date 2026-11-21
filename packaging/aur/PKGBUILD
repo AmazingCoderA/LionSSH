@@ -4,13 +4,13 @@ pkgver=1.0.0.r0.g0000000
 pkgrel=1
 pkgdesc="LionSSH - mega terminal command center: SSH, scripts, proxy, scheduler, themes"
 arch=('x86_64' 'aarch64')
-url="https://github.com/OWNER/LionSSH"
+url="https://github.com/AmazingCoderA/LionSSH"
 license=('MIT')
 depends=('gcc-libs')
 makedepends=('cargo' 'git')
 provides=('lionssh')
 conflicts=('lionssh')
-source=("$pkgname::git+https://github.com/OWNER/LionSSH.git")
+source=("$pkgname::git+https://github.com/AmazingCoderA/LionSSH.git")
 sha256sums=('SKIP')
 
 pkgver() {
@@ -30,3 +30,4 @@ package() {
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
+

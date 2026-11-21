@@ -31,10 +31,10 @@
 
 Скачай `lionssh-*-x86_64-pc-windows-msvc.zip` из Releases, распакуй и запусти `lionssh.exe`.
 
-Или PowerShell installer (после публикации релиза, замени `OWNER/LionSSH`):
+Или PowerShell installer (после публикации релиза, замени `AmazingCoderA/LionSSH`):
 
 ```powershell
-irm https://raw.githubusercontent.com/OWNER/LionSSH/main/packaging/install/install-windows.ps1 | iex
+irm https://raw.githubusercontent.com/AmazingCoderA/LionSSH/main/packaging/install/install-windows.ps1 | iex
 ```
 
 ### Linux (Release binary)
@@ -48,12 +48,12 @@ irm https://raw.githubusercontent.com/OWNER/LionSSH/main/packaging/install/insta
 Или installer script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OWNER/LionSSH/main/packaging/install/install-linux.sh | bash
+curl -fsSL https://raw.githubusercontent.com/AmazingCoderA/LionSSH/main/packaging/install/install-linux.sh | bash
 ```
 
 ### AUR
 
-В репозитории есть шаблон `packaging/aur/PKGBUILD`. Для публикации в AUR создай пакет `lionssh-git` (или `lionssh`) и замени `OWNER/LionSSH` на реальный репозиторий.
+В репозитории есть шаблон `packaging/aur/PKGBUILD`. Для публикации в AUR создай пакет `lionssh-git` (или `lionssh`) и замени `AmazingCoderA/LionSSH` на реальный репозиторий.
 
 ```bash
 cd packaging/aur
@@ -123,7 +123,7 @@ git push origin main --tags
 
 Файл: `packaging/aur/PKGBUILD` (шаблон `lionssh-git`). Перед публикацией:
 
-1. Замени `OWNER/LionSSH` на реальный GitHub repo.
+1. Замени `AmazingCoderA/LionSSH` на реальный GitHub repo.
 2. Проверь `pkgver()`, зависимости, license.
 3. Сгенерируй `.SRCINFO`: `makepkg --printsrcinfo > .SRCINFO`.
 4. Запушь в AUR repo.
@@ -136,3 +136,4 @@ git push origin main --tags
 ## Лицензия
 
 MIT - см. [LICENSE](LICENSE).
+

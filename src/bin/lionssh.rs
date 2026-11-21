@@ -170,6 +170,7 @@ enum AliasCmd {
 enum ConfigCmd {
     SetShell { shell: String },
     SetLogLimit { limit: usize },
+    SetLanguage { lang: String },
 }
 
 fn main() -> Result<()> {
@@ -219,6 +220,8 @@ fn main() -> Result<()> {
                 println!("theme={}", ws.config.theme);
                 println!("default_shell={}", ws.config.default_shell);
                 println!("log_limit={}", ws.config.log_limit);
+                println!("language={}", ws.config.language);
+                println!("active_ssh_profile={}", ws.config.active_ssh_profile);
             }
             Some(ConfigCmd::SetShell { shell }) => {
                 ws.config.default_shell = shell;
@@ -227,6 +230,11 @@ fn main() -> Result<()> {
             }
             Some(ConfigCmd::SetLogLimit { limit }) => {
                 ws.config.log_limit = limit.max(50);
+                storage::save(&ws)?;
+                println!("ok");
+            }
+            Some(ConfigCmd::SetLanguage { lang }) => {
+                ws.config.language = lang;
                 storage::save(&ws)?;
                 println!("ok");
             }

@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use eframe::egui;
 use lionssh::executor::{run_shell, script_shell};
+use lionssh::i18n::{self, Lang};
 use lionssh::ssh::build_ssh_command_line;
 use lionssh::*;
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -21,7 +22,7 @@ fn main() -> eframe::Result<()> {
     )
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Tab {
     Dashboard,
     Terminal,
@@ -76,12 +77,16 @@ impl GuiApp {
         let mut visuals = egui::Visuals::dark();
         visuals.override_text_color = Some(egui::Color32::from_rgb(230, 236, 245));
         cc.egui_ctx.set_visuals(visuals);
-        let ws = storage::load().unwrap_or_default();
+        let mut ws = storage::load().unwrap_or_default();
+        if ws.config.language.is_empty() {
+            ws.config.language = "ru".into();
+        }
         let (tx, rx) = mpsc::channel();
+        let status = i18n::t(Lang::from_code(&ws.config.language), "ready").to_string();
         Self {
             ws,
             tab: Tab::Dashboard,
-            status: "Ready".into(),
+            status,
             last_err: String::new(),
             term_cmd: String::new(),
             term_out: vec!["LionSSH GUI ready.".into()],
@@ -101,6 +106,35 @@ impl GuiApp {
             form_mode: FormMode::None,
             last_tick: Instant::now(),
         }
+    }
+    fn lang(&self) -> Lang {
+        Lang::from_code(&self.ws.config.language)
+    }
+    fn tr(&self, key: &str) -> &'static str {
+        i18n::t(self.lang(), key)
+    }
+    fn active_profile_id(&self) -> String {
+        let tab_key = format!("{:?}", self.tab);
+        self.ws
+            .tab_profiles
+            .get(&tab_key)
+            .cloned()
+            .filter(|id| self.ws.ssh_profiles.iter().any(|p| &p.id == id))
+            .or_else(|| {
+                let id = self.ws.config.active_ssh_profile.clone();
+                if self.ws.ssh_profiles.iter().any(|p| p.id == id) { Some(id) } else { None }
+            })
+            .unwrap_or_default()
+    }
+    fn set_active_profile(&mut self, id: String) {
+        let tab_key = format!("{:?}", self.tab);
+        if id.is_empty() {
+            self.ws.tab_profiles.remove(&tab_key);
+        } else {
+            self.ws.tab_profiles.insert(tab_key, id.clone());
+        }
+        self.ws.config.active_ssh_profile = id;
+        self.save();
     }
     fn save(&mut self) {
         if let Err(e) = storage::save(&self.ws) {
@@ -300,22 +334,53 @@ impl eframe::App for GuiApp {
             ui.horizontal_wrapped(|ui| {
                 ui.heading(egui::RichText::new("LionSSH").strong());
                 ui.separator();
-                for (tab, label) in [
-                    (Tab::Dashboard, "Dashboard"),
-                    (Tab::Terminal, "Terminal"),
+                let tabs = [
+                    (Tab::Dashboard, self.tr("dashboard")),
+                    (Tab::Terminal, self.tr("terminal")),
                     (Tab::Ssh, "SSH"),
-                    (Tab::Scripts, "Scripts"),
-                    (Tab::Scheduler, "Scheduler"),
-                    (Tab::Proxies, "Proxies"),
-                    (Tab::Aliases, "Aliases"),
-                    (Tab::Settings, "Settings"),
-                ] {
+                    (Tab::Scripts, self.tr("scripts")),
+                    (Tab::Scheduler, self.tr("scheduler")),
+                    (Tab::Proxies, self.tr("proxies")),
+                    (Tab::Aliases, self.tr("aliases")),
+                    (Tab::Settings, self.tr("settings")),
+                ];
+                for (tab, label) in tabs {
                     if ui.selectable_label(self.tab == tab, label).clicked() {
                         self.tab = tab;
                         self.form_mode = FormMode::None;
                     }
                 }
+                ui.separator();
+                ui.label(format!("{}:", self.tr("active_profile")));
+                let mut active = self.active_profile_id();
+                let active_name = self.ws.ssh_profiles.iter().find(|p| p.id == active).map(|p| p.name.as_str()).unwrap_or(self.tr("no_profile")).to_string();
+                let profiles: Vec<(String, String)> = self.ws.ssh_profiles.iter().map(|p| (p.id.clone(), p.name.clone())).collect();
+                let mut picked: Option<String> = None;
+                egui::ComboBox::from_id_salt("global_profile")
+                    .selected_text(active_name)
+                    .show_ui(ui, |ui| {
+                        if ui.selectable_value(&mut active, String::new(), self.tr("no_profile")).changed() {
+                            picked = Some(active.clone());
+                        }
+                        for (id, name) in &profiles {
+                            if ui.selectable_value(&mut active, id.clone(), name).changed() {
+                                picked = Some(active.clone());
+                            }
+                        }
+                    });
+                if let Some(id) = picked { self.set_active_profile(id); }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let mut lang = self.lang();
+                    egui::ComboBox::from_id_salt("lang_pick")
+                        .selected_text(lang.label())
+                        .show_ui(ui, |ui| {
+                            for l in i18n::Lang::ALL {
+                                if ui.selectable_value(&mut lang, l, l.label()).changed() {
+                                    self.ws.config.language = lang.code().into();
+                                    self.save();
+                                }
+                            }
+                        });
                     if self.busy > 0 {
                         ui.label(format!("running: {}", self.busy));
                     }
@@ -351,9 +416,10 @@ impl eframe::App for GuiApp {
 
 impl GuiApp {
     fn ui_dashboard(&mut self, ui: &mut egui::Ui) {
+        self.profile_bar(ui);
         ui.columns(2, |cols| {
             cols[0].group(|ui| {
-                ui.heading("Overview");
+                ui.heading(self.tr("overview"));
                 ui.separator();
                 ui.label(format!("SSH profiles: {}", self.ws.ssh_profiles.len()));
                 ui.label(format!("Scripts: {}", self.ws.scripts.len()));
@@ -364,7 +430,7 @@ impl GuiApp {
                 ui.label(format!("Theme: {}", self.ws.config.theme));
             });
             cols[0].group(|ui| {
-                ui.heading("Recent activity");
+                ui.heading(self.tr("recent_activity"));
                 ui.separator();
                 egui::ScrollArea::vertical()
                     .max_height(320.0)
@@ -379,7 +445,7 @@ impl GuiApp {
                         }
                     });
             });
-            cols[1].heading("Quick command");
+            cols[1].heading(self.tr("quick_command"));
             cols[1].horizontal(|ui| {
                 let resp = ui.add(
                     egui::TextEdit::singleline(&mut self.term_cmd)
@@ -410,6 +476,7 @@ impl GuiApp {
     }
 
     fn ui_terminal(&mut self, ui: &mut egui::Ui) {
+        self.profile_bar(ui);
         ui.horizontal(|ui| {
             let resp = ui.add(
                 egui::TextEdit::singleline(&mut self.term_cmd)
@@ -427,7 +494,7 @@ impl GuiApp {
                     self.term_cmd.clear();
                 }
             }
-            if ui.button("Clear").clicked() {
+            if ui.button(self.tr("clear")).clicked() {
                 self.term_out.clear();
             }
         });
@@ -441,15 +508,16 @@ impl GuiApp {
             });
     }
     fn ui_ssh(&mut self, ui: &mut egui::Ui) {
+        self.profile_bar(ui);
         ui.horizontal(|ui| {
-            if ui.button("Add").clicked() {
+            if ui.button(self.tr("add")).clicked() {
                 self.form_mode = FormMode::Add;
                 self.ssh_form = SshProfile {
                     port: 22,
                     ..Default::default()
                 };
             }
-            if ui.button("Edit").clicked() {
+            if ui.button(self.tr("edit")).clicked() {
                 if let Some(id) = &self.ssh_sel {
                     if let Some(p) = self.ws.ssh_profiles.iter().find(|p| &p.id == id).cloned() {
                         self.ssh_form = p;
@@ -457,19 +525,19 @@ impl GuiApp {
                     }
                 }
             }
-            if ui.button("Delete").clicked() {
+            if ui.button(self.tr("delete")).clicked() {
                 if let Some(id) = self.ssh_sel.clone() {
                     self.ws.ssh_profiles.retain(|p| p.id != id);
                     self.ssh_sel = None;
                     self.save();
                 }
             }
-            if ui.button("Connect").clicked() {
+            if ui.button(self.tr("connect")).clicked() {
                 if let Some(id) = self.ssh_sel.clone() {
                     self.connect_ssh(&id);
                 }
             }
-            if ui.button("Copy command").clicked() {
+            if ui.button(self.tr("copy_command")).clicked() {
                 if let Some(id) = &self.ssh_sel {
                     if let Some(p) = self.ws.ssh_profiles.iter().find(|p| &p.id == id).cloned() {
                         let proxy = self.ws.proxies.iter().find(|x| x.id == p.proxy_id).cloned();
@@ -589,7 +657,7 @@ impl GuiApp {
         ui.label("Notes");
         ui.add(egui::TextEdit::multiline(&mut self.ssh_form.notes).desired_rows(3));
         ui.horizontal(|ui| {
-            if ui.button("Save").clicked() {
+            if ui.button(self.tr("save")).clicked() {
                 if self.ssh_form.name.is_empty() || self.ssh_form.host.is_empty() {
                     self.status = "Name and host required".into();
                 } else {
@@ -614,18 +682,19 @@ impl GuiApp {
                     self.status = "SSH saved".into();
                 }
             }
-            if ui.button("Cancel").clicked() {
+            if ui.button(self.tr("cancel")).clicked() {
                 self.form_mode = FormMode::None;
             }
         });
     }
     fn ui_scripts(&mut self, ui: &mut egui::Ui) {
+        self.profile_bar(ui);
         ui.horizontal(|ui| {
-            if ui.button("Add").clicked() {
+            if ui.button(self.tr("add")).clicked() {
                 self.form_mode = FormMode::Add;
                 self.script_form = Script::default();
             }
-            if ui.button("Edit").clicked() {
+            if ui.button(self.tr("edit")).clicked() {
                 if let Some(id) = &self.script_sel {
                     if let Some(s) = self.ws.scripts.iter().find(|s| &s.id == id).cloned() {
                         self.script_form = s;
@@ -633,19 +702,19 @@ impl GuiApp {
                     }
                 }
             }
-            if ui.button("Delete").clicked() {
+            if ui.button(self.tr("delete")).clicked() {
                 if let Some(id) = self.script_sel.clone() {
                     self.ws.scripts.retain(|s| s.id != id);
                     self.script_sel = None;
                     self.save();
                 }
             }
-            if ui.button("Run").clicked() {
+            if ui.button(self.tr("run")).clicked() {
                 if let Some(id) = self.script_sel.clone() {
                     self.run_script_id(&id);
                 }
             }
-            if ui.button("Export").clicked() {
+            if ui.button(self.tr("export")).clicked() {
                 if let Some(id) = &self.script_sel {
                     if let Some(s) = self.ws.scripts.iter().find(|s| &s.id == id).cloned() {
                         if let Ok(dir) = Workspace::scripts_dir() {
@@ -763,7 +832,7 @@ impl GuiApp {
                 .font(egui::TextStyle::Monospace),
         );
         ui.horizontal(|ui| {
-            if ui.button("Save").clicked() {
+            if ui.button(self.tr("save")).clicked() {
                 if self.script_form.name.is_empty() {
                     self.status = "Script name required".into();
                 } else {
@@ -791,18 +860,19 @@ impl GuiApp {
                     self.status = "Script saved".into();
                 }
             }
-            if ui.button("Cancel").clicked() {
+            if ui.button(self.tr("cancel")).clicked() {
                 self.form_mode = FormMode::None;
             }
         });
     }
     fn ui_scheduler(&mut self, ui: &mut egui::Ui) {
+        self.profile_bar(ui);
         ui.horizontal(|ui| {
-            if ui.button("Add").clicked() {
+            if ui.button(self.tr("add")).clicked() {
                 self.form_mode = FormMode::Add;
                 self.task_form = ScheduledTask::default();
             }
-            if ui.button("Edit").clicked() {
+            if ui.button(self.tr("edit")).clicked() {
                 if let Some(id) = &self.task_sel {
                     if let Some(t) = self.ws.tasks.iter().find(|t| &t.id == id).cloned() {
                         self.task_form = t;
@@ -810,21 +880,21 @@ impl GuiApp {
                     }
                 }
             }
-            if ui.button("Delete").clicked() {
+            if ui.button(self.tr("delete")).clicked() {
                 if let Some(id) = self.task_sel.clone() {
                     self.ws.tasks.retain(|t| t.id != id);
                     self.task_sel = None;
                     self.save();
                 }
             }
-            if ui.button("Run now").clicked() {
+            if ui.button(self.tr("run_now")).clicked() {
                 if let Some(id) = &self.task_sel {
                     if let Some(t) = self.ws.tasks.iter().find(|t| &t.id == id).cloned() {
                         self.run_task(&t);
                     }
                 }
             }
-            if ui.button("Toggle").clicked() {
+            if ui.button(self.tr("toggle")).clicked() {
                 if let Some(id) = &self.task_sel {
                     if let Some(t) = self.ws.tasks.iter_mut().find(|t| &t.id == id) {
                         t.enabled = !t.enabled;
@@ -901,7 +971,7 @@ impl GuiApp {
         ui.add(egui::DragValue::new(&mut self.task_form.interval_secs).range(0..=86400));
         ui.checkbox(&mut self.task_form.enabled, "Enabled");
         ui.horizontal(|ui| {
-            if ui.button("Save").clicked() {
+            if ui.button(self.tr("save")).clicked() {
                 if self.task_form.name.is_empty() || self.task_form.target.is_empty() {
                     self.status = "Task name/target required".into();
                 } else {
@@ -923,14 +993,15 @@ impl GuiApp {
                     self.status = "Task saved".into();
                 }
             }
-            if ui.button("Cancel").clicked() {
+            if ui.button(self.tr("cancel")).clicked() {
                 self.form_mode = FormMode::None;
             }
         });
     }
     fn ui_proxies(&mut self, ui: &mut egui::Ui) {
+        self.profile_bar(ui);
         ui.horizontal(|ui| {
-            if ui.button("Add").clicked() {
+            if ui.button(self.tr("add")).clicked() {
                 self.form_mode = FormMode::Add;
                 self.proxy_form = ProxyProfile {
                     kind: "socks5".into(),
@@ -938,7 +1009,7 @@ impl GuiApp {
                     ..Default::default()
                 };
             }
-            if ui.button("Edit").clicked() {
+            if ui.button(self.tr("edit")).clicked() {
                 if let Some(id) = &self.proxy_sel {
                     if let Some(p) = self.ws.proxies.iter().find(|p| &p.id == id).cloned() {
                         self.proxy_form = p;
@@ -946,7 +1017,7 @@ impl GuiApp {
                     }
                 }
             }
-            if ui.button("Delete").clicked() {
+            if ui.button(self.tr("delete")).clicked() {
                 if let Some(id) = self.proxy_sel.clone() {
                     self.ws.proxies.retain(|p| p.id != id);
                     self.proxy_sel = None;
@@ -1010,7 +1081,7 @@ impl GuiApp {
         ui.label("Password");
         ui.add(egui::TextEdit::singleline(&mut self.proxy_form.password).password(true));
         ui.horizontal(|ui| {
-            if ui.button("Save").clicked() {
+            if ui.button(self.tr("save")).clicked() {
                 if self.proxy_form.name.is_empty() || self.proxy_form.host.is_empty() {
                     self.status = "Proxy name/host required".into();
                 } else {
@@ -1035,19 +1106,20 @@ impl GuiApp {
                     self.status = "Proxy saved".into();
                 }
             }
-            if ui.button("Cancel").clicked() {
+            if ui.button(self.tr("cancel")).clicked() {
                 self.form_mode = FormMode::None;
             }
         });
     }
 
     fn ui_aliases(&mut self, ui: &mut egui::Ui) {
+        self.profile_bar(ui);
         ui.horizontal(|ui| {
-            if ui.button("Add").clicked() {
+            if ui.button(self.tr("add")).clicked() {
                 self.form_mode = FormMode::Add;
                 self.alias_form = CommandAlias::default();
             }
-            if ui.button("Edit").clicked() {
+            if ui.button(self.tr("edit")).clicked() {
                 if let Some(id) = &self.alias_sel {
                     if let Some(a) = self.ws.aliases.iter().find(|a| &a.id == id).cloned() {
                         self.alias_form = a;
@@ -1055,14 +1127,14 @@ impl GuiApp {
                     }
                 }
             }
-            if ui.button("Delete").clicked() {
+            if ui.button(self.tr("delete")).clicked() {
                 if let Some(id) = self.alias_sel.clone() {
                     self.ws.aliases.retain(|a| a.id != id);
                     self.alias_sel = None;
                     self.save();
                 }
             }
-            if ui.button("Run").clicked() {
+            if ui.button(self.tr("run")).clicked() {
                 if let Some(id) = &self.alias_sel {
                     if let Some(a) = self.ws.aliases.iter().find(|a| &a.id == id).cloned() {
                         let shell = self.ws.config.default_shell.clone();
@@ -1114,7 +1186,7 @@ impl GuiApp {
         ui.label("Description");
         ui.text_edit_singleline(&mut self.alias_form.description);
         ui.horizontal(|ui| {
-            if ui.button("Save").clicked() {
+            if ui.button(self.tr("save")).clicked() {
                 if self.alias_form.name.is_empty() || self.alias_form.command.is_empty() {
                     self.status = "Alias name/command required".into();
                 } else {
@@ -1139,15 +1211,60 @@ impl GuiApp {
                     self.status = "Alias saved".into();
                 }
             }
-            if ui.button("Cancel").clicked() {
+            if ui.button(self.tr("cancel")).clicked() {
                 self.form_mode = FormMode::None;
             }
         });
     }
 
-    fn ui_settings(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Settings");
+    fn profile_bar(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.label(format!("{}:", self.tr("active_profile")));
+            let mut active = self.active_profile_id();
+            let active_name = self
+                .ws
+                .ssh_profiles
+                .iter()
+                .find(|p| p.id == active)
+                .map(|p| p.name.as_str())
+                .unwrap_or(self.tr("no_profile"))
+                .to_string();
+            let profiles: Vec<(String, String)> = self.ws.ssh_profiles.iter().map(|p| (p.id.clone(), p.name.clone())).collect();
+            let mut picked: Option<String> = None;
+            egui::ComboBox::from_id_salt(format!("profile_{:?}", self.tab))
+                .selected_text(active_name)
+                .show_ui(ui, |ui| {
+                    if ui.selectable_value(&mut active, String::new(), self.tr("no_profile")).changed() {
+                        picked = Some(active.clone());
+                    }
+                    for (id, name) in &profiles {
+                        if ui.selectable_value(&mut active, id.clone(), name).changed() {
+                            picked = Some(active.clone());
+                        }
+                    }
+                });
+            if let Some(id) = picked { self.set_active_profile(id); }
+        });
         ui.separator();
+    }
+
+    fn ui_settings(&mut self, ui: &mut egui::Ui) {
+        ui.heading(self.tr("settings"));
+        self.profile_bar(ui);
+        ui.horizontal(|ui| {
+            ui.label(self.tr("language"));
+            let mut lang = self.lang();
+            egui::ComboBox::from_id_salt("cfg_lang")
+                .selected_text(lang.label())
+                .show_ui(ui, |ui| {
+                    for l in i18n::Lang::ALL {
+                        if ui.selectable_value(&mut lang, l, l.label()).changed() {
+                            self.ws.config.language = lang.code().into();
+                            self.save();
+                        }
+                    }
+                });
+        });
         ui.horizontal(|ui| {
             ui.label("Default shell");
             egui::ComboBox::from_id_salt("cfg_shell")
@@ -1163,27 +1280,17 @@ impl GuiApp {
             ui.add(egui::DragValue::new(&mut self.ws.config.log_limit).range(50..=5000));
         });
         ui.horizontal(|ui| {
-            ui.label("Theme name");
+            ui.label("Theme");
             ui.text_edit_singleline(&mut self.ws.config.theme);
         });
         ui.separator();
-        ui.label(format!(
-            "Workspace: {}",
-            Workspace::data_file()
-                .map(|p| p.display().to_string())
-                .unwrap_or_default()
-        ));
-        ui.label(format!(
-            "Scripts dir: {}",
-            Workspace::scripts_dir()
-                .map(|p| p.display().to_string())
-                .unwrap_or_default()
-        ));
-        if ui.button("Save settings").clicked() {
+        ui.label(format!("Workspace: {}", Workspace::data_file().map(|p|p.display().to_string()).unwrap_or_default()));
+        ui.label(format!("Scripts dir: {}", Workspace::scripts_dir().map(|p|p.display().to_string()).unwrap_or_default()));
+        if ui.button(self.tr("save_settings")).clicked() {
             self.save();
-            self.status = "Settings saved".into();
+            self.status = self.tr("settings_saved").into();
         }
-        ui.separator();
-        ui.small("GUI and CLI share the same workspace.json. Build CLI: cargo build --release --bin lionssh. Build GUI: cargo build --release --bin lionssh-gui --features gui (default). ");
     }
 }
+
+

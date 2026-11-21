@@ -171,6 +171,14 @@ pub struct AppConfig {
     pub default_shell: String,
     pub log_limit: usize,
     pub gui_scale: f32,
+    #[serde(default = "default_language")]
+    pub language: String,
+    #[serde(default)]
+    pub active_ssh_profile: String,
+}
+
+fn default_language() -> String {
+    "ru".into()
 }
 
 impl Default for AppConfig {
@@ -180,6 +188,8 @@ impl Default for AppConfig {
             default_shell: default_shell().into(),
             log_limit: 300,
             gui_scale: 1.0,
+            language: default_language(),
+            active_ssh_profile: String::new(),
         }
     }
 }
@@ -202,6 +212,8 @@ pub struct Workspace {
     pub aliases: Vec<CommandAlias>,
     #[serde(default)]
     pub history: VecDeque<HistoryEntry>,
+    #[serde(default)]
+    pub tab_profiles: std::collections::BTreeMap<String, String>,
 }
 
 impl Workspace {

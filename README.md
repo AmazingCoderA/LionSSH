@@ -1,10 +1,3 @@
-<p align="center">
-  <a href="README.md"><img alt="RU" src="https://img.shields.io/badge/RU-Русский-9b6bff?style=for-the-badge"></a>
-  <a href="README.en.md"><img alt="EN" src="https://img.shields.io/badge/EN-English-1f2937?style=for-the-badge"></a>
-  <a href="README.uk.md"><img alt="UK" src="https://img.shields.io/badge/UK-Українська-0057B8?style=for-the-badge"></a>
-  <a href="README.de.md"><img alt="DE" src="https://img.shields.io/badge/DE-Deutsch-333333?style=for-the-badge"></a>
-</p>
-
 # LionSSH
 
 [![Build](https://github.com/AmazingCoderA/LionSSH/actions/workflows/build.yml/badge.svg)](https://github.com/AmazingCoderA/LionSSH/actions/workflows/build.yml)
@@ -23,8 +16,8 @@
 ## Что нового
 
 - Выбор активного SSH-профиля **на каждой вкладке** (в GUI, с сохранением).
-- Интерфейс GUI на нескольких языках: **RU / EN / UK / DE**.
-- Язык можно переключать вверху окна и в Settings; в CLI: `lionssh config set-language ru|en|uk|de`.
+- Интерфейс GUI на двух языках: **Русский / English**.
+- Язык можно переключать вверху окна и в Settings; в CLI: `lionssh config set-language ru|en`.
 
 ## Скачать (без install-скриптов)
 
@@ -56,7 +49,7 @@ chmod +x ./lionssh-gui-x86_64-unknown-linux-gnu
 - **Aliases** — короткие имена для команд.
 - **Run/Terminal** — выполнение команд/алиасов, захват вывода, статус.
 - **Active profile per tab** — выбранный SSH-профиль сохраняется для каждой вкладки GUI.
-- **Multilanguage GUI** — Русский, English, Українська, Deutsch.
+- **GUI language** — Русский / English.
 - **Shared storage** — `%LOCALAPPDATA%\LionSSH\workspace.json` (Windows) / data dir (Linux).
 
 ## CLI примеры

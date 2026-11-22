@@ -13,7 +13,7 @@ env:
 
 jobs:
   build:
-    name: build-${{ matrix.target }}
+    name: build-${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -21,22 +21,33 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            platform: windows-x64
             archive: zip
             ext: .exe
             gui: true
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            platform: linux-x64
             archive: tar.gz
             ext: ""
             gui: true
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+            platform: linux-x64-musl
             archive: tar.gz
             ext: ""
             gui: false
             musl: true
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
+            platform: linux-arm64
+            archive: tar.gz
+            ext: ""
+            gui: false
+            cross: true
+          - os: ubuntu-latest
+            target: aarch64-linux-android
+            platform: android-arm64
             archive: tar.gz
             ext: ""
             gui: false
@@ -49,7 +60,7 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
         with:
-          key: rel-${{ matrix.target }}
+          key: rel-${{ matrix.platform }}
 
       - name: Linux GUI deps
         if: matrix.gui && runner.os == 'Linux'
@@ -82,19 +93,19 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME:-dev}"
-          NAME="lionssh-${VERSION}-${{ matrix.target }}"
+          NAME="lionssh-${VERSION}-${{ matrix.platform }}"
           OUT="dist/$NAME"
           mkdir -p "$OUT"
-          cp "target/${{ matrix.target }}/release/lionssh${{ matrix.ext }}" "$OUT/"
-          cp "target/${{ matrix.target }}/release/lionssh${{ matrix.ext }}" "dist/lionssh-${{ matrix.target }}${{ matrix.ext }}"
+          cp "target/${{ matrix.target }}/release/lionssh${{ matrix.ext }}" "$OUT/lionssh-cli-${{ matrix.platform }}${{ matrix.ext }}"
+          cp "target/${{ matrix.target }}/release/lionssh${{ matrix.ext }}" "dist/lionssh-cli-${{ matrix.platform }}${{ matrix.ext }}"
           if [ "${{ matrix.gui }}" = "true" ]; then
-            cp "target/${{ matrix.target }}/release/lionssh-gui${{ matrix.ext }}" "$OUT/"
-            cp "target/${{ matrix.target }}/release/lionssh-gui${{ matrix.ext }}" "dist/lionssh-gui-${{ matrix.target }}${{ matrix.ext }}"
-            (cd dist && sha256sum "lionssh-gui-${{ matrix.target }}${{ matrix.ext }}" > "lionssh-gui-${{ matrix.target }}${{ matrix.ext }}.sha256")
+            cp "target/${{ matrix.target }}/release/lionssh-gui${{ matrix.ext }}" "$OUT/lionssh-gui-${{ matrix.platform }}${{ matrix.ext }}"
+            cp "target/${{ matrix.target }}/release/lionssh-gui${{ matrix.ext }}" "dist/lionssh-gui-${{ matrix.platform }}${{ matrix.ext }}"
+            (cd dist && sha256sum "lionssh-gui-${{ matrix.platform }}${{ matrix.ext }}" > "lionssh-gui-${{ matrix.platform }}${{ matrix.ext }}.sha256")
           fi
           cp README.md LICENSE "$OUT/"
           cp -r packaging "$OUT/packaging"
-          (cd dist && sha256sum "lionssh-${{ matrix.target }}${{ matrix.ext }}" > "lionssh-${{ matrix.target }}${{ matrix.ext }}.sha256")
+          (cd dist && sha256sum "lionssh-cli-${{ matrix.platform }}${{ matrix.ext }}" > "lionssh-cli-${{ matrix.platform }}${{ matrix.ext }}.sha256")
           if [ "${{ matrix.archive }}" = "zip" ]; then
             (cd dist && 7z a "$NAME.zip" "$NAME")
           else
@@ -104,7 +115,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: lionssh-${{ matrix.target }}
+          name: lionssh-${{ matrix.platform }}
           path: dist/*
 
   release:
@@ -121,5 +132,6 @@ jobs:
         run: cd dist && sha256sum *.zip *.tar.gz *.exe lionssh-* 2>/dev/null | grep -v '\.sha256' > SHA256SUMS.txt || true
       - uses: softprops/action-gh-release@v2
         with:
+          name: LionSSH ${{ github.ref_name }}
           files: dist/*
           generate_release_notes: true

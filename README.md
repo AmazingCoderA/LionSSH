@@ -21,24 +21,22 @@
 
 ## Скачать (без install-скриптов)
 
-### Windows
-Из [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest) скачай нужный файл:
-- **GUI**: `lionssh-gui-x86_64-pc-windows-msvc.exe`
-- **CLI**: `lionssh-x86_64-pc-windows-msvc.exe`
+Все файлы лежат в [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest) — просто скачай нужный бинарник.
 
-Запускай напрямую.
-
-### Linux
-Из [Latest Release](https://github.com/AmazingCoderA/LionSSH/releases/latest):
-- **GUI**: `lionssh-gui-x86_64-unknown-linux-gnu`
-- **CLI**: `lionssh-x86_64-unknown-linux-gnu`, `lionssh-x86_64-unknown-linux-musl`, `lionssh-aarch64-unknown-linux-gnu`
+| Платформа | GUI | CLI |
+|---|---|---|
+| Windows x64 | `lionssh-gui-windows-x64.exe` | `lionssh-cli-windows-x64.exe` |
+| Linux x64 | `lionssh-gui-linux-x64` | `lionssh-cli-linux-x64` |
+| Linux x64 (musl/static) | — | `lionssh-cli-linux-x64-musl` |
+| Linux ARM64 | — | `lionssh-cli-linux-arm64` |
+| Android ARM64 | — | `lionssh-cli-android-arm64` |
 
 ```bash
-chmod +x ./lionssh-gui-x86_64-unknown-linux-gnu
-./lionssh-gui-x86_64-unknown-linux-gnu
+chmod +x ./lionssh-gui-linux-x64
+./lionssh-gui-linux-x64
 ```
 
-> GUI на Linux требует X11/Wayland + OpenGL. Для headless-серверов используй CLI.
+> GUI на Linux требует X11/Wayland + OpenGL. Для headless/Android используй CLI.
 
 ## Возможности
 
@@ -86,7 +84,7 @@ cargo build --release --bin lionssh-gui
 - `.github/workflows/release.yml` — релиз по тегу `v*`.
 
 Релиз публикует:
-- прямые бинарники: `lionssh-<target>[.exe]`, `lionssh-gui-<target>[.exe]` (где GUI поддерживается)
+- прямые бинарники с понятными именами: `lionssh-gui-<platform>[.exe]`, `lionssh-cli-<platform>[.exe]`
 - архивы `.zip/.tar.gz`
 - `SHA256SUMS.txt` и `.sha256`
 

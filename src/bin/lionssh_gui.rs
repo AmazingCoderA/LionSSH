@@ -126,6 +126,11 @@ impl GuiApp {
             })
             .unwrap_or_default()
     }
+    fn active_profile(&self) -> Option<SshProfile> {
+        let id = self.active_profile_id();
+        if id.is_empty() { return None; }
+        self.ws.ssh_profiles.iter().find(|p| p.id == id).cloned()
+    }
     fn set_active_profile(&mut self, id: String) {
         let tab_key = format!("{:?}", self.tab);
         if id.is_empty() {
@@ -159,8 +164,19 @@ impl GuiApp {
         }
     }
     fn spawn_shell(&mut self, kind: &str, title: String, shell: String, command: String) {
+        self.spawn_shell_on_profile(kind, title, shell, command, self.active_profile())
+    }
+
+    fn spawn_shell_on_profile(&mut self, kind: &str, title: String, shell: String, command: String, profile: Option<SshProfile>) {
+        let (shell, command, label) = if let Some(p) = profile {
+            let proxy = self.ws.proxies.iter().find(|x| x.id == p.proxy_id).cloned();
+            let cmdline = build_ssh_command_line(&p, proxy.as_ref(), Some(&command));
+            (self.ws.config.default_shell.clone(), cmdline, format!("{title} @ {}", p.name))
+        } else {
+            (shell, command, title)
+        };
         self.busy += 1;
-        self.push_out(format!(">>> {title}"));
+        self.push_out(format!(">>> {label}"));
         let tx = self.tx.clone();
         let kind = kind.to_string();
         std::thread::spawn(move || {
@@ -168,7 +184,7 @@ impl GuiApp {
             let msg = match r {
                 Ok(res) => RunMsg {
                     kind,
-                    title,
+                    title: label,
                     ok: res.ok,
                     status: res.status,
                     output: res.output,
@@ -176,7 +192,7 @@ impl GuiApp {
                 },
                 Err(e) => RunMsg {
                     kind,
-                    title,
+                    title: label,
                     ok: false,
                     status: "error".into(),
                     output: e.to_string(),
@@ -285,7 +301,7 @@ impl GuiApp {
             let proxy = self.ws.proxies.iter().find(|x| x.id == p.proxy_id).cloned();
             let cmd = build_ssh_command_line(&p, proxy.as_ref(), Some(&s.content));
             let shell = self.ws.config.default_shell.clone();
-            self.spawn_shell("ssh", format!("ssh-script:{}", s.name), shell, cmd);
+            self.spawn_shell_on_profile("ssh", format!("ssh-script:{}", s.name), shell, cmd, None);
         } else {
             let shell = script_shell(&s.kind, &self.ws.config.default_shell).to_string();
             self.spawn_shell("script", format!("script:{}", s.name), shell, s.content);
@@ -319,7 +335,7 @@ impl GuiApp {
             }
         }
         let shell = self.ws.config.default_shell.clone();
-        self.spawn_shell("ssh", format!("ssh:{}", p.name), shell, cmdline);
+        self.spawn_shell_on_profile("ssh", format!("ssh:{}", p.name), shell, cmdline, None);
     }
 }
 impl eframe::App for GuiApp {
